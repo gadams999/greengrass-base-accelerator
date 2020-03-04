@@ -67,7 +67,7 @@ class GreengrassBaseStack extends cdk.Stack {
 
         // Functions to be used in the Greengrass Group Deployment
         const ggLambdaBASE = new GreengrassLambdaBASE(this, "GreengrassLambdaBASE", {
-            functionName: id + '-GreengrassLambda-BASEe',
+            functionName: id + '-GreengrassLambda-BASE',
             stackName: id,
         });
 
@@ -125,11 +125,11 @@ class GreengrassBaseStack extends cdk.Stack {
             initialVersion: {
                 subscriptions: [
                     // {
-                    //     // Simulated sensor data published on topic 'sensor_data' and received by the producer Lambda
+                    //     // Add subscriptions as needed, this is a placeholder for source to cloud
                     //     id: '1',
                     //     source: ggLambdaBASE.greengrassLambdaAlias.functionArn,
                     //     subject: 'base',
-                    //     target: ggLambdaBASE.greengrassLambdaAlias.functionArn
+                    //     target: 'cloud'
                     // },
                 ]
             }
