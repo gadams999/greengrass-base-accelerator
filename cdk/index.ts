@@ -12,6 +12,8 @@ class GreengrassBaseStack extends cdk.Stack {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
+        // Policy for created thing (data plane operations)
+        // This should be scoped down as needed for Greengrass
         const iotPolicy = JSON.stringify(
                 {
                     "Version": "2012-10-17",

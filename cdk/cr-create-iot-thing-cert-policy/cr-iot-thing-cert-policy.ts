@@ -28,7 +28,7 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
    * 
    * @param functionName - Name for the Lambda helper function
    * @param iotThingName - Base name for core thing name - if not provided the name is derived from the stack name
-   * @param iotPolicy - JSON string IoT policy for Thing
+   * @param iotPolicy - JSON string IoT policy for Thing - policy name derived from Thing name
    * @returns String values for `certificatePem`, `privateKeyPem`, `certificateArn`, `thingArn`, and `endpointDataAts` to be used as CloudFormation outputs.
    */
   public readonly certificatePem: string;
@@ -50,7 +50,19 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
         runtime: lambda.Runtime.PYTHON_3_8,
         // Policy for Lambda to action on IoT resources - TODO - scope down to actions taken by Lambda
         initialPolicy: [
-          new iam.PolicyStatement({actions: ['iot:*'], resources: ['*']})]
+          new iam.PolicyStatement( {
+              actions: [ 'iot:*' ],
+              resources: [ '*' ]
+          }),
+          new iam.PolicyStatement( {
+              actions: [
+                'ssm:DeleteParameter',
+                'ssm:GetParameter',
+                'ssm:PutParameter'
+              ],
+              resources: [ '*' ]
+          })
+        ]
       })),
       properties: props
     });
