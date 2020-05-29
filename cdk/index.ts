@@ -12,10 +12,18 @@ class GreengrassBaseStack extends cdk.Stack {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
+        const iotPolicy = JSON.stringify(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [{"Effect": "Allow", "Action": "iot:*", "Resource": "*"},],
+                }             
+        )
+
         // Create AWS IoT Thing/Certificate/Policy as basis for Greengrass Core
         const crIoTResource = new CustomResourceIoTThingCertPolicy(this, 'CreateThingCertPolicyCustomResource', {
             functionName: id + '-CreateThingCertPolicyFunction',
-            stackName: id,
+            iotThingName: cdk.Stack.of(this).stackName.split("-").join("_") + "_Core",
+            iotPolicy: iotPolicy
         });
         new cdk.CfnOutput(this, 'CertificatePEM', {
             description: 'Certificate of Greengrass Core thing',

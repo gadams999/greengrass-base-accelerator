@@ -20,10 +20,11 @@
     "typescript": "~3.7.2"
   },
   "dependencies": {
-    "@aws-cdk/aws-cloudformation": "^1.27.0",
-    "@aws-cdk/aws-greengrass": "^1.27.0",
-    "@aws-cdk/aws-lambda": "^1.27.0",
-    "@aws-cdk/core": "^1.27.0",
+    "@aws-cdk/aws-cloudformation": "1.42.0",
+    "@aws-cdk/aws-greengrass": "1.42.0",
+    "@aws-cdk/aws-iot": "1.42.0",
+    "@aws-cdk/aws-lambda": "1.42.0",
+    "@aws-cdk/core": "1.42.0",
     "uuid": "^3.4.0"
   }
 }

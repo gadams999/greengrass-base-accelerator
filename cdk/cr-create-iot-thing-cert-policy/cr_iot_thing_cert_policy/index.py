@@ -1,5 +1,5 @@
 """
-Create AWS IoT thing, certificate and policy to be used by Greengrass CloudFormation resources
+Helper to create AWS IoT thing, certificate and IoT policy
 """
 
 import json
@@ -18,9 +18,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def create_iot_thing_certificate_policy(thing_name: str):
+def create_iot_thing_certificate_policy(thing_name: str, iot_policy: str):
     """Create IoT thing, AWS IoT generated certificate and private key,
-       IoT policy for thing, and IAM role for Greengrass Group role
+       IoT policy for thing, then associate all.
+
+       :param thing_name: name used for IoT Thing
+       :param iot_policy: JSON string of IoT policy actions
     """
 
     iot_client = boto3.client("iot")
@@ -56,21 +59,20 @@ def create_iot_thing_certificate_policy(thing_name: str):
             continue
 
     # Create AWS IoT policy for use by Greengrass Core (the thing)
-    gg_core_policy = json.dumps(
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {"Effect": "Allow", "Action": "iot:*", "Resource": "*"},
-                {"Effect": "Allow", "Action": "greengrass:*", "Resource": "*"},
-            ],
-        }
-    )
-
+    # gg_core_policy = json.dumps(
+    #     {
+    #         "Version": "2012-10-17",
+    #         "Statement": [
+    #             {"Effect": "Allow", "Action": "iot:*", "Resource": "*"},
+    #         ],
+    #     }
+    # )
+    attempts = 0
     while True:
         try:
             # Create policy
             response = iot_client.create_policy(
-                policyName=thing_name + "-full-access", policyDocument=gg_core_policy
+                policyName=thing_name + "-full-access", policyDocument=iot_policy
             )
             iot_policy = response["policyName"]
             break
@@ -79,10 +81,16 @@ def create_iot_thing_certificate_policy(thing_name: str):
                 f"Error calling iot.create_policy() (will retry) for thing {thing_name}, error: {e}"
             )
             time.sleep(2)
-            continue
+            if attempts < 3:
+                attempts += 1
+                continue
+            else:
+                return False
+
 
     # Thing and certificate created, attach thing <-> certificate <-> policy
     # Policy to certificate
+    attempts = 0
     while True:
         try:
             iot_client.attach_principal_policy(
@@ -94,7 +102,11 @@ def create_iot_thing_certificate_policy(thing_name: str):
                 f"Error calling iot.attach_principal_policy() policy to cert (will retry) for thing {thing_name}, error: {e}"
             )
             time.sleep(2)
-            continue
+            if attempts < 3:
+                attempts += 1
+                continue
+            else:
+                return False
     # Thing to certificate
     while True:
         try:
@@ -136,7 +148,7 @@ def create_iot_thing_certificate_policy(thing_name: str):
 
 def delete_iot_thing_certificate_policy(thing_name: str):
     """Delete IoT thing, AWS IoT generated certificate and private key,
-       IoT policy for thing, and IAM role for Greengrass Group role
+       and IoT policy for thing
     """
 
     iot_client = boto3.client("iot")
@@ -254,8 +266,11 @@ def main(event, context):
         elif event["RequestType"] == "Create":
             # Operations to perform during Create, then return response_data
             response = create_iot_thing_certificate_policy(
-                thing_name=event["ResourceProperties"]["GreengrassCoreName"]
+                thing_name=event["ResourceProperties"]["IotThingName"],
+                iot_policy = event["ResourceProperties"]["IotPolicy"]
             )
+            if response == False:
+                raise Exception("Failure to create thing/cert/policy")
             response_data = {
                 "thingArn": response["thingArn"],
                 "certificateArn": response["certificateArn"],
@@ -268,7 +283,7 @@ def main(event, context):
             response_data = {}
         else:
             if not delete_iot_thing_certificate_policy(
-                thing_name=event["ResourceProperties"]["GreengrassCoreName"]
+                thing_name=event["ResourceProperties"]["IotThingName"]
             ):
                 # there was an error, alert
                 cfn_response = cfnresponse.FAILED
