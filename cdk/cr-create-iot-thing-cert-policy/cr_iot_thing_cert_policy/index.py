@@ -247,6 +247,7 @@ def main(event, context):
     import logging as log
     import cfnresponse
 
+    # Ability to set event context to different logging level than called functions
     log.getLogger().setLevel(log.INFO)
 
     # NOTE: All ResourceProperties passed will uppercase the first letter
