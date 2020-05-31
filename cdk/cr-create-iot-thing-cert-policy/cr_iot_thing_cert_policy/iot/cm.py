@@ -1,3 +1,10 @@
+"""
+    Context Managers
+
+    Functions to manage creation and deletion of
+    AWS IoT resources
+"""
+
 import logging
 import boto3
 from botocore.config import Config
@@ -6,8 +13,10 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 class CreateThing:
     """Create AWS IoT Thing"""
+
     def __init__(self, client, thing_name):
         self.client = client
         self.thing_name = thing_name
@@ -22,7 +31,7 @@ class CreateThing:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logging.info("Thing successfully created")
+            logging.info(f"Thing: {self.thing_name} successfully created")
             return True
         else:
             # Exception, so delete thing - no need to check for other principals as
@@ -35,13 +44,13 @@ class CreateThing:
 
 class DeleteThing:
     """Delete AWS IoT Thing"""
+
     def __init__(self, client, thing_name):
         self.client = client
         self.thing_name = thing_name
 
     def __enter__(self):
         logger.debug("enter context")
-
         # Detach any other certificates or principals that may have been attached outside
         # of the CloudFormation process
         response = self.client.list_thing_principals(thingName=self.thing_name)
@@ -57,7 +66,7 @@ class DeleteThing:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.info("Thing successfully deleted")
+            logger.info(f"Thing: {self.thing_name} successfully deleted")
             return True
         else:
             # Exception, could not delete thing
@@ -69,6 +78,7 @@ class DeleteThing:
 
 class CreateCertKey:
     """Create AWS IoT certificate and private key"""
+
     def __init__(self, client):
         self.client = client
         self.values = {}
@@ -79,7 +89,7 @@ class CreateCertKey:
         self.values = {
             "certificateArn": response["certificateArn"],
             "certificatePem": response["certificatePem"],
-            "keyPem": response["keyPair"]["PrivateKey"],
+            "privateKeyPem": response["keyPair"]["PrivateKey"],
         }
         return self.values
 
@@ -87,7 +97,7 @@ class CreateCertKey:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.debug("Certifcate and private key successfully created")
+            logger.info("Certifcate and private key successfully created")
             return True
         else:
             # Exception, so deactivate and delete thing
@@ -111,16 +121,16 @@ class DeleteCertKey:
         response = self.client.update_certificate(
             certificateId=certificate_id, newStatus="INACTIVE"
         )
-        logger.info(f"Deactivate certificate response: {response}")
+        logger.debug(f"Deactivate certificate response: {response}")
         response = self.client.delete_certificate(certificateId=certificate_id)
-        logger.info(f"Delete certifcate response: {response}")
+        logger.debug(f"Delete certifcate response: {response}")
         return True
 
     def __exit__(self, type, value, tb):
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.info("Certificate successfully deleted")
+            logger.info(f"Certificate: {self.cert_arn} successfully deleted")
             return True
         else:
             # Exception, so delete thing
@@ -148,7 +158,7 @@ class CreatePolicy:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.info("Policy successfully created")
+            logger.info(f"Policy: {self.policy_name} successfully created")
             return True
         else:
             # Exception
@@ -166,14 +176,14 @@ class DeletePolicy:
     def __enter__(self):
         logger.debug("enter context")
         response = self.client.delete_policy(policyName=self.policy_name)
-        print(f"Delete response: {response}")
+        logger.debug(f"DeletePolicy response: {response}")
         return True
 
     def __exit__(self, type, value, tb):
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.info("Policy successfully deleted")
+            logger.info(f"Policy: {self.policy_name} successfully deleted")
             return True
         else:
             # Exception, so delete thing
@@ -195,7 +205,6 @@ class AttachPrincipalPolicy:
             self.client.attach_principal_policy(
                 policyName=self.policy_name, principal=self.principal
             )
-            logger.info(f"Principal {self.principal} successfully attached to policy: {self.policy_name}")
             return True
         except ClientError as e:
             logger.error(
@@ -207,7 +216,9 @@ class AttachPrincipalPolicy:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.info("Principal successfully attached to policy")
+            logger.info(
+                f"Principal: {self.principal} successfully attached to policy: {self.policy_name}"
+            )
             return True
         else:
             # Exception, so delete thing
@@ -242,7 +253,9 @@ class DetachPrincipalPolicy:
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.debug("Policy successfully detached from principal")
+            logger.info(
+                f"Successfully detached all policies from principal: {self.principal}"
+            )
             return True
         else:
             # Exception, so delete thing
@@ -264,7 +277,9 @@ class AttachThingPrincipal:
             self.client.attach_thing_principal(
                 thingName=self.thing_name, principal=self.principal
             )
-            logger.info(f"Thing {self.thing_name} successfully attached to principal: {self.principal}")
+            logger.info(
+                f"Thing: {self.thing_name} successfully attached to principal: {self.principal}"
+            )
             return True
         except ClientError as e:
             logger.error(
@@ -302,14 +317,18 @@ class DetachThingPrincipal:
             self.client.detach_thing_principal(
                 thingName=self.thing_name, principal=principal
             )
-            logger.info(f"Successfully detached  thing: {self.thing_name} from principal: {principal}")
+            logger.info(
+                f"Successfully detached  thing: {self.thing_name} from principal: {principal}"
+            )
         return True
 
     def __exit__(self, type, value, tb):
         logger.debug("exit context")
         if tb is None:
             # No exception, so just exit
-            logger.debug("Thing successfully detached from principal")
+            logger.info(
+                f"Successfully detached  all principals from thing: {self.thing_name}"
+            )
             return True
         else:
             # Exception, so undo

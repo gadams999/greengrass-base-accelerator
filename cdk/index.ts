@@ -17,7 +17,10 @@ class GreengrassBaseStack extends cdk.Stack {
         const iotPolicy = JSON.stringify(
                 {
                     "Version": "2012-10-17",
-                    "Statement": [{"Effect": "Allow", "Action": "iot:*", "Resource": "*"},],
+                    "Statement": [
+                        {"Effect": "Allow", "Action": "iot:*", "Resource": "*"},
+                        {"Effect": "Allow", "Action": "greengrass:*", "Resource": "*"},
+                    ],
                 }             
         )
 
@@ -26,22 +29,6 @@ class GreengrassBaseStack extends cdk.Stack {
             functionName: id + '-CreateThingCertPolicyFunction',
             iotThingName: cdk.Stack.of(this).stackName.split("-").join("_") + "_Core",
             iotPolicy: iotPolicy
-        });
-        new cdk.CfnOutput(this, 'CertificatePEM', {
-            description: 'Certificate of Greengrass Core thing',
-            value: crIoTResource.certificatePem
-        });
-        new cdk.CfnOutput(this, 'PrivateKeyPEM', {
-            description: 'Private Key of Greengrass Core thing',
-            value: crIoTResource.privateKeyPem
-        });
-        new cdk.CfnOutput(this, 'ThingArn', {
-            description: 'Arn for IoT thing',
-            value: crIoTResource.thingArn
-        });
-        new cdk.CfnOutput(this, 'EndpointDataAts', {
-            description: 'IoT data endpoint',
-            value: crIoTResource.endpointDataAts
         });
 
         // Create Greengrass Service role with permissions the Core's resources should have
@@ -70,7 +57,7 @@ class GreengrassBaseStack extends cdk.Stack {
                             "arn:aws:logs:*:*:*"
                         ]
                     },
-                    // Allow other resources as needed
+                    // Allow other actions as needed
                 ]
             },
         });

@@ -1,5 +1,5 @@
 """
-Helper to create AWS IoT thing, certificate and IoT policy
+Helper Custom Resource to create AWS IoT thing, certificate and IoT policy
 """
 
 import json
@@ -76,7 +76,9 @@ def create_iot_thing_certificate_policy(thing_name: str, policy_document: str):
     return response
 
 
-def delete_iot_thing_certificate_policy(thing_name: str, certificate_arn: str, policy_name: str):
+def delete_iot_thing_certificate_policy(
+    thing_name: str, certificate_arn: str, policy_name: str
+):
     """Delete IoT thing, AWS IoT generated certificate and private key,
        and IoT policy for thing. Only the referred resources are deleted, but
        any other associations to the thing or certifcate are also removed
@@ -93,7 +95,9 @@ def delete_iot_thing_certificate_policy(thing_name: str, certificate_arn: str, p
         with DetachThingPrincipal(iot_client, thing_name):
             logging.info(f"All principals detached from {thing_name}")
             with DetachPrincipalPolicy(iot_client, certificate_arn):
-                logging.info(f"All policies detached from certificate arn: {certificate_arn}")
+                logging.info(
+                    f"All policies detached from certificate arn: {certificate_arn}"
+                )
                 with DeletePolicy(iot_client, policy_name):
                     logging.info(f"Policy: {policy_name} deleted")
                     with DeleteCertKey(iot_client, certificate_arn):
@@ -102,19 +106,15 @@ def delete_iot_thing_certificate_policy(thing_name: str, certificate_arn: str, p
                             logging.info(f"Thing: {thing} deleted")
         return True
     except:
+        # Exception on the delete process, log and return cfnresponse failed
         return False
 
 
-def put_parameter(name, value):
+def put_parameter(name, value, type="String"):
     """Place value into Parameter store as string using name"""
     client = boto3.client("ssm")
     try:
-        client.put_parameter(
-            Name=name,
-            Value=value,
-            Type='String',
-            Overwrite=True
-        )
+        client.put_parameter(Name=name, Value=value, Type=type, Overwrite=True)
     except ClientError as e:
         logger.error(
             f"Error creating or updating parameter: {name} with value: {value}, error: {e}"
@@ -128,22 +128,45 @@ def get_parameter(name):
     try:
         return client.get_parameter(Name=name)["Parameter"]["Value"]
     except ClientError as e:
-        logger.error(
-            f"Error getting parameter: {name}, error: {e}"
-        )
+        logger.error(f"Error getting parameter: {name}, error: {e}")
         return False
 
 
 def delete_parameter(name):
     """Delete the parameter from the Parameter Store"""
-    client = boto3.client("ssm") 
+    client = boto3.client("ssm")
     try:
         client.delete_parameter(Name=name)
     except ClientError as e:
-        logger.error(
-            f"Error deleting parameter: {name}, error: {e}"
-        )
+        logger.error(f"Error deleting parameter: {name}, error: {e}")
         return False
+
+
+def delete_parameters(filter):
+    """Deletes all parameters that match the filter from the Parameter Store"""
+
+    client = boto3.client("ssm")
+
+    # Return all parameters that match the filter
+    for key in paginate(
+        client.describe_parameters,
+        ParameterFilters=[{"Key": "Path", "Values": [filter,]},],
+    ):
+        try:
+            client.delete_parameter(Name=key["Name"])
+            logger.info(f"For filter: {filter}, deleted key {key['Name']}")
+        except ClientError as e:
+            logger.error(f"Error deleting parameter: {key['Name']} , error: {e}")
+
+
+def paginate(method, **kwargs):
+    """Paginate as needed for boto3 calls"""
+    client = method.__self__
+    paginator = client.get_paginator(method.__name__)
+    for page in paginator.paginate(**kwargs).result_key_iters():
+        for result in page:
+            yield result
+
 
 def main(event, context):
     import logging as log
@@ -156,7 +179,7 @@ def main(event, context):
     #       of the property and leave the rest of the case intact.
 
     physical_id = event["ResourceProperties"]["PhysicalId"]
-    stack_name = str(event["StackId"].split(':')[-1:][0]).split('/')[1]
+    stack_name = str(event["StackId"].split(":")[-1:][0]).split("/")[1]
     cfn_response = cfnresponse.SUCCESS
 
     try:
@@ -173,28 +196,51 @@ def main(event, context):
                 thing_name=event["ResourceProperties"]["IotThingName"],
                 policy_document=event["ResourceProperties"]["IotPolicy"],
             )
-            put_parameter(f"/{stack_name}/certificate_arn", response["certificateArn"])
-            put_parameter(f"/{stack_name}/policy_name", response["policyName"])
             if response == False:
                 raise Exception("Failure to create thing/cert/policy")
+
+            # Resources created, put values into parameter store for others to access
+            put_parameter(
+                name=f"/{stack_name}/certificate_arn", value=response["certificateArn"]
+            )
+            put_parameter(
+                name=f"/{stack_name}/policy_name", value=response["policyName"]
+            )
+            # Store certificate and private key in parameter store
+            put_parameter(
+                name=f"/{stack_name}/certificate_pem", value=response["certificatePem"]
+            )
+            put_parameter(
+                name=f"/{stack_name}/privatekey_pem",
+                value=response["privateKeyPem"],
+                type="SecureString",
+            )
+            # Thing Arn and endpoints (used to craft config.json)
+            put_parameter(name=f"/{stack_name}/thing_arn", value=response["thingArn"])
+            put_parameter(
+                name=f"/{stack_name}/endpoint_data_ats",
+                value=response["endpointDataAts"],
+            )
+            # Data to be returned for use by the rest of the calling CloudFormation stack
             response_data = {
                 "thingArn": response["thingArn"],
                 "certificateArn": response["certificateArn"],
-                "certificatePem": response["certificatePem"],
-                "privateKeyPem": response["keyPem"],
-                "endpointDataAts": response["endpointDataAts"],
             }
         elif event["RequestType"] == "Update":
             # Operations to perform during Update, then return NULL for response data
             response_data = {}
         else:
+            # DELETE RequestType
+            # Delete all resources
             if delete_iot_thing_certificate_policy(
                 thing_name=event["ResourceProperties"]["IotThingName"],
                 certificate_arn=get_parameter(f"/{stack_name}/certificate_arn"),
-                policy_name=get_parameter(f"/{stack_name}/policy_name")
+                policy_name=get_parameter(f"/{stack_name}/policy_name"),
             ):
-                delete_parameter(f"/{stack_name}/certificate_arn")
-                delete_parameter(f"/{stack_name}/policy_name")
+                logging.info("All resources deleted")
+                # On successful resource delete, clear out all parameters for the stack
+                delete_parameters(f"/{stack_name}")
+                logging.info(f"All {stack_name} parameters deleted")
             else:
                 # there was an error deleting, alert
                 cfn_response = cfnresponse.FAILED

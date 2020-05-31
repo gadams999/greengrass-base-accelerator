@@ -29,13 +29,10 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
    * @param functionName - Name for the Lambda helper function
    * @param iotThingName - Base name for core thing name - if not provided the name is derived from the stack name
    * @param iotPolicy - JSON string IoT policy for Thing - policy name derived from Thing name
-   * @returns String values for `certificatePem`, `privateKeyPem`, `certificateArn`, `thingArn`, and `endpointDataAts` to be used as CloudFormation outputs.
+   * @returns String values for `certificateArn` and `thingArn` to be referenced by other CloudFormation outputs.
    */
-  public readonly certificatePem: string;
-  public readonly privateKeyPem: string;
   public readonly certificateArn: string;
   public readonly thingArn: string;
-  public readonly endpointDataAts: string;
 
   constructor(scope: cdk.Construct, id: string, props: CustomResourceIoTThingCertPolicyProps) {
     super(scope, id);
@@ -56,6 +53,7 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
           }),
           new iam.PolicyStatement( {
               actions: [
+                'ssm:DescribeParameters',
                 'ssm:DeleteParameter',
                 'ssm:GetParameter',
                 'ssm:PutParameter'
@@ -66,12 +64,9 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
       })),
       properties: props
     });
-    // Set resource return values for use by cdk.cfnOutput
-    this.certificatePem = resource.getAttString('certificatePem');
-    this.privateKeyPem = resource.getAttString('privateKeyPem');
+    // Set resource return values for use by other CDK constructs
     this.thingArn = resource.getAttString('thingArn');
     this.certificateArn = resource.getAttString('certificateArn');
-    this.endpointDataAts = resource.getAttString('endpointDataAts')
   }
 }
 
