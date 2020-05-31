@@ -8,6 +8,7 @@ import logging
 import time
 import boto3
 from botocore.exceptions import ClientError
+from botocore.config import Config
 from iot.cm import (
     CreateThing,
     DeleteThing,
@@ -39,7 +40,8 @@ def create_iot_thing_certificate_policy(thing_name: str, policy_document: str):
        :param policy_document: JSON string of IoT policy actions
     """
 
-    iot_client = boto3.client("iot")
+    config = Config(retries=dict(max_attempts=5))
+    iot_client = boto3.client("iot", config=config)
     policy_name = thing_name + "-cfn_created"
     response = {}
 
@@ -88,7 +90,8 @@ def delete_iot_thing_certificate_policy(
        :param policy_name: IoT policy to detach and delete
     """
 
-    iot_client = boto3.client("iot")
+    config = Config(retries=dict(max_attempts=5))
+    iot_client = boto3.client("iot", config=config)
 
     # Single-shot detach and delete all resources
     try:
@@ -112,7 +115,8 @@ def delete_iot_thing_certificate_policy(
 
 def put_parameter(name, value, type="String"):
     """Place value into Parameter store as string using name"""
-    client = boto3.client("ssm")
+    config = Config(retries=dict(max_attempts=5))
+    client = boto3.client("ssm", config=config)
     try:
         client.put_parameter(Name=name, Value=value, Type=type, Overwrite=True)
     except ClientError as e:
@@ -124,7 +128,8 @@ def put_parameter(name, value, type="String"):
 
 def get_parameter(name):
     """Return value from Parameter Store"""
-    client = boto3.client("ssm")
+    config = Config(retries=dict(max_attempts=5))
+    client = boto3.client("ssm", config=config)
     try:
         return client.get_parameter(Name=name)["Parameter"]["Value"]
     except ClientError as e:
@@ -134,7 +139,8 @@ def get_parameter(name):
 
 def delete_parameter(name):
     """Delete the parameter from the Parameter Store"""
-    client = boto3.client("ssm")
+    config = Config(retries=dict(max_attempts=5))
+    client = boto3.client("ssm", config=config)
     try:
         client.delete_parameter(Name=name)
     except ClientError as e:
@@ -145,8 +151,8 @@ def delete_parameter(name):
 def delete_parameters(filter):
     """Deletes all parameters that match the filter from the Parameter Store"""
 
-    client = boto3.client("ssm")
-
+    config = Config(retries=dict(max_attempts=5))
+    client = boto3.client("ssm", config=config)
     # Return all parameters that match the filter
     for key in paginate(
         client.describe_parameters,
