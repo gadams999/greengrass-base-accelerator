@@ -4,7 +4,7 @@ import iam = require('@aws-cdk/aws-iam');
 import cdk = require('@aws-cdk/core');
 import uuid = require('uuid/v5');
 
-export interface CustomResourceIoTThingCertPolicyProps {
+export interface HelperIoTThingCertPolicyProps {
   /**
    * Resource properties used to construct the custom resource and passed as dictionary
    * to the resource as part of the "ResourceProperties". Note that the properties below
@@ -18,7 +18,7 @@ export interface CustomResourceIoTThingCertPolicyProps {
   physicalId?: string;
 }
 
-export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
+export class HelperIoTThingCertPolicy extends cdk.Construct {
   /**
    * Creates an IoT Thing, certificate with private key, AWS IoT policy, and returns the
    * created resources and CloudFormation outputs.
@@ -34,14 +34,14 @@ export class CustomResourceIoTThingCertPolicy extends cdk.Construct {
   public readonly certificateArn: string;
   public readonly thingArn: string;
 
-  constructor(scope: cdk.Construct, id: string, props: CustomResourceIoTThingCertPolicyProps) {
+  constructor(scope: cdk.Construct, id: string, props: HelperIoTThingCertPolicyProps) {
     super(scope, id);
     props.physicalId = props.functionName;
     const resource = new cfn.CustomResource(this, 'Resource', {
       provider: cfn.CustomResourceProvider.fromLambda(new lambda.SingletonFunction(this, 'Singleton', {
         functionName: props.functionName,
         uuid: uuid(props.functionName, uuid.DNS),
-        code: lambda.Code.fromAsset('cr-create-iot-thing-cert-policy/cr_iot_thing_cert_policy'),
+        code: lambda.Code.fromAsset('helper-iot-thing-cert-policy/helper_iot_thing_cert_policy'),
         handler: 'index.main',
         timeout: cdk.Duration.seconds(30),
         runtime: lambda.Runtime.PYTHON_3_8,

@@ -1,5 +1,5 @@
 """
-Helper Custom Resource to create AWS IoT thing, certificate and IoT policy
+Custom Resource to create AWS IoT thing, certificate and IoT policy for CDK Construct Helper
 """
 
 import json

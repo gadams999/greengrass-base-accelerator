@@ -1,6 +1,6 @@
 import cdk = require('@aws-cdk/core');
 import greengrass = require('@aws-cdk/aws-greengrass');
-import { CustomResourceIoTThingCertPolicy } from './cr-create-iot-thing-cert-policy/cr-iot-thing-cert-policy';
+import { HelperIoTThingCertPolicy } from './helper-iot-thing-cert-policy/helper-iot-thing-cert-policy';
 import { CustomResourceGreengrassServiceRole } from './cr-greengrass-service-role/cr-greengrass-service-role';
 import { CustomResourceGreengrassResetDeployment } from './cr-greengrass-reset-deployment/cr-greengrass-reset-deployment';
 import { GreengrassLambdaBASE } from './lambda-gg-base/lambda-gg-base';
@@ -25,7 +25,7 @@ class GreengrassBaseStack extends cdk.Stack {
         )
 
         // Create AWS IoT Thing/Certificate/Policy as basis for Greengrass Core
-        const crIoTResource = new CustomResourceIoTThingCertPolicy(this, 'CreateThingCertPolicyCustomResource', {
+        const crIoTResource = new HelperIoTThingCertPolicy(this, 'CreateThingCertPolicyCustomResource', {
             functionName: id + '-CreateThingCertPolicyFunction',
             iotThingName: cdk.Stack.of(this).stackName.split("-").join("_") + "_Core",
             iotPolicy: iotPolicy
