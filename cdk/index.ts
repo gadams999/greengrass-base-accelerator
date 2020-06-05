@@ -1,5 +1,6 @@
 import cdk = require('@aws-cdk/core');
 import greengrass = require('@aws-cdk/aws-greengrass');
+// import secretsmanager = require('@aws-cdk/aws-secretsmanager');
 import { HelperIoTThingCertPolicy } from './helper-iot-thing-cert-policy/helper-iot-thing-cert-policy';
 import { CustomResourceGreengrassServiceRole } from './cr-greengrass-service-role/cr-greengrass-service-role';
 import { CustomResourceGreengrassResetDeployment } from './cr-greengrass-reset-deployment/cr-greengrass-reset-deployment';
@@ -12,8 +13,18 @@ class GreengrassBaseStack extends cdk.Stack {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
+        // // Secret used by Greengrass Lambda
+        // // generated string will have the name "foo" and a random secret value
+        // const secret = new secretsmanager.Secret(this, 'TestSecret', {
+        //     secretName: "greengrass-mysecret",
+        //     generateSecretString: {
+        //         secretStringTemplate: JSON.stringify({}),
+        //         generateStringKey: "foo",
+        //     }
+        // });
+
         // Policy for created thing (data plane operations)
-        // This should be scoped down as needed for Greengrass
+        // the IoT resources should be scoped down as needed for Greengrass
         const iotPolicy = JSON.stringify(
                 {
                     "Version": "2012-10-17",
@@ -104,13 +115,20 @@ class GreengrassBaseStack extends cdk.Stack {
             },
             functions: [
                 {
-                    id: '1',
+                    id: 'LambdaFunction1',
                     functionArn: ggLambdaBASE.greengrassLambdaAlias.functionArn,
                     functionConfiguration: {
                         encodingType: 'binary',
                         pinned: true,
                         timeout: 3,
                         environment: {
+                            // This refers to the secret resource below, uncomment to affiliate
+                            // resourceAccessPolicies: [
+                            //     {
+                            //         resourceId: "ResourceId1",
+                            //         permission: "ro"
+                            //     }
+                            // ]
                         }
                     }
                 },
@@ -123,7 +141,7 @@ class GreengrassBaseStack extends cdk.Stack {
                 subscriptions: [
                     // {
                     //     // Add subscriptions as needed, this is a placeholder for source to cloud
-                    //     id: '1',
+                    //     id: 'Subscription1',
                     //     source: ggLambdaBASE.greengrassLambdaAlias.functionArn,
                     //     subject: 'base',
                     //     target: 'cloud'
@@ -138,27 +156,27 @@ class GreengrassBaseStack extends cdk.Stack {
                 loggers: [
                     // Setup logging of system and lambda locally and cloud
                     {
-                        id: '1',
+                        id: 'LoggerDefinition1',
                         component: "GreengrassSystem",
                         level: "INFO",
                         type: "FileSystem",
                         space: 1024
                     },
                     {
-                        id: '2',
+                        id: 'LoggerDefinition2',
                         component: "Lambda",
                         level: "INFO",
                         type: "FileSystem",
                         space: 1024
                     },
                     {
-                        id: '3',
+                        id: 'LoggerDefinition3',
                         component: "GreengrassSystem",
                         level: "WARN",
                         type: "AWSCloudWatch"
                     },
                     {
-                        id: '4',
+                        id: 'LoggerDefinition4',
                         component: "Lambda",
                         level: "WARN",
                         type: "AWSCloudWatch"
@@ -166,6 +184,28 @@ class GreengrassBaseStack extends cdk.Stack {
                 ]
             }
         });
+
+        /**
+         * This is an example resource definition for a cloud resource (secret manager). The secret definition
+         * is at the top of this file and named "secret". Not the commented out environment for the base lambda
+         * that affiliates the secret resource, "ResourceId1" with the lambda.
+         */
+        // const resourceDefinition = new greengrass.CfnResourceDefinition(this, 'ResourceDefinition', {
+        //     name: 'ResourceDefinition',
+        //     initialVersion: {
+        //         resources: [
+        //             {
+        //                 id: 'ResourceId1',
+        //                 name: "gg_secret",
+        //                 resourceDataContainer: {
+        //                     secretsManagerSecretResourceData: {
+        //                         arn: secret.secretArn
+        //                     }
+        //                 }
+        //             }
+        //         ]
+        //     }
+        // });
 
         // Combine all definitions and create the Group
         const greengrassGroup = new greengrass.CfnGroup(this, 'GreengrassGroup', {
