@@ -14,13 +14,10 @@ class GreengrassBaseStack extends cdk.Stack {
         super(scope, id, props);
 
         // // Secret used by Greengrass Lambda
-        // // generated string will have the name "foo" and a random secret value
-        // const secret = new secretsmanager.Secret(this, 'TestSecret', {
-        //     secretName: "greengrass-mysecret",
-        //     generateSecretString: {
-        //         secretStringTemplate: JSON.stringify({}),
-        //         generateStringKey: "foo",
-        //     }
+        // // String's values (JSON key-value pairs) made available
+        // const secret = new secretsmanager.CfnSecret(this, 'TestSecret', {
+        //     name: "greengrass-mysecret",
+        //     secretString: JSON.stringify({"foo": "bar"})
         // });
 
         // Policy for created thing (data plane operations)
@@ -199,7 +196,7 @@ class GreengrassBaseStack extends cdk.Stack {
         //                 name: "gg_secret",
         //                 resourceDataContainer: {
         //                     secretsManagerSecretResourceData: {
-        //                         arn: secret.secretArn
+        //                         arn: secret.ref
         //                     }
         //                 }
         //             }
