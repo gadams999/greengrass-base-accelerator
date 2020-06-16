@@ -230,5 +230,16 @@ class GreengrassBaseStack extends cdk.Stack {
 
 // Create stack
 const app = new cdk.App();
-new GreengrassBaseStack(app, 'greengrass-base-accel');
+// Pull the stack name from the context. Alert if the stack name has not been set.
+try {
+  const x = app.node.tryGetContext("stack_name");
+  if (x === "REPLACE_WITH_STACK_NAME") {
+      console.error("The stack name needs to be defined in cdk.json");
+      process.exit(1);
+  }
+} catch (e) {
+  console.log("error is", e);
+}
+
+new GreengrassBaseStack(app, app.node.tryGetContext("stack_name"));
 app.synth();
