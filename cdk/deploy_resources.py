@@ -1,10 +1,14 @@
 import json
 import sys
 import argparse
+import logging
 from pathlib import Path
 from urllib import request
 import boto3
 from botocore.exceptions import ClientError
+
+logger = logging.getLogger()
+logger.setLevel(logging.WARNING)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -49,12 +53,12 @@ config_json_template = {
 
 
 def read_manifest():
-    """Read the manifest file to get the stackname
+    """Read the CDK manifest file to get the stackname
 
         As of cdk 1.13.1, the stackname can be found in the manifest file
-        as an artifact object with a type of aws:cloudformation:stack
-    
+        as an artifact object with a type of aws:cloudformation:stack    
     """
+
     manifest_file = Path("cdk.out/manifest.json")
     if manifest_file.is_file():
         with open(manifest_file) as f:
@@ -74,6 +78,21 @@ def read_manifest():
             return i
 
 
+def get_parameter(client, name, type="String"):
+    """Return value from Parameter Store"""
+
+    try:
+        if type == "SecureString":
+            return client.get_parameter(Name=name, WithDecryption=True)["Parameter"][
+                "Value"
+            ]
+        else:
+            return client.get_parameter(Name=name)["Parameter"]["Value"]
+    except ClientError as e:
+        logger.error(f"Error getting parameter: {name}, error: {e}")
+        return False
+
+
 if __name__ == "__main__":
     # Confirm profile given as parameters
     args = parser.parse_args()
@@ -83,32 +102,24 @@ if __name__ == "__main__":
     print("Reading deployed CDK manifest file contents")
     stackname = read_manifest()
 
-    # Get outputs to create files and config.json
+    # Get values from Parameter Store to create files and config.json
     session = boto3.Session(profile_name=args.profile)
-    cloudformation = session.resource("cloudformation")
-    stack = cloudformation.Stack(stackname)
-    stack.load()
-    # Populate stack outputs
-    for output in stack.outputs:
-        if output["OutputKey"] == "CertificatePEM":
-            certificate_pem = output["OutputValue"]
-        elif output["OutputKey"] == "PrivateKeyPEM":
-            private_key = output["OutputValue"]
-        elif output["OutputKey"] == "ThingArn":
-            thing_arn = output["OutputValue"]
-        elif output["OutputKey"] == "EndpointDataAts":
-            endpoint = output["OutputValue"]
-        elif output["OutputKey"] == "GreengrassSourceBucket":
-            source_bucket = output["OutputValue"]
+    ssm = session.client("ssm")
+    certificate_pem = get_parameter(ssm, f"/{stackname}/certificate_pem")
+    privatekey_pem = get_parameter(
+        ssm, f"/{stackname}/privatekey_pem", type="SecureString"
+    )
+    thing_arn = get_parameter(ssm, f"/{stackname}/thing_arn")
+    endpoint = get_parameter(ssm, f"/{stackname}/endpoint_data_ats")
 
     # Create the credentials files, config.json, and download the Amazon root CA1 file
     with open(Path("../gg_docker/certs/certificate.pem"), "w") as f:
         # Thing's certificate
         f.write(certificate_pem)
     with open(Path("../gg_docker/certs/private.key"), "w") as f:
-        # Thing's certificate
-        f.write(private_key)
-    # Finally download the root CA file
+        # Thing's private key
+        f.write(privatekey_pem)
+    # Root CA file
     url = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
     request.urlretrieve(url, Path("../gg_docker/certs/root.ca.pem"))
 
@@ -126,4 +137,3 @@ if __name__ == "__main__":
         f.write(json.dumps(config_file, indent=2))
 
     # Addition accelerator specific steps go here
-
