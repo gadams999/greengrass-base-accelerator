@@ -1,37 +1,37 @@
 {
-  "name": "gg-accelerator-stream-manager",
-  "version": "1.0.0",
-  "description": "Deploy stack to test Stream Manager and Docker deployment connector",
-  "private": true,
-  "scripts": {
-      "build": "tsc",
-      "watch": "tsc -w",
-      "cdk": "cdk",
-      "deploy": "cdk deploy",
-      "postdeploy": "python3 post_deploy_tasks.py",
-      "destroy": "cdk destroy"
-  },
-  "author": {
-      "name": "Amazon Web Services",
-      "url": "https://aws.amazon.com",
-      "organization": true
-  },
-  "license": "Apache-2.0",
-  "devDependencies": {
-      "@types/node": "^13.7.7",
-      "@types/uuid": "^3.4.8",
-      "prettier": "2.0.5",
-      "typescript": "~3.7.2"
-  },
-  "dependencies": {
-      "@aws-cdk/aws-cloudformation": "1.45.0",
-      "@aws-cdk/aws-greengrass": "1.45.0",
-      "@aws-cdk/aws-iot": "1.45.0",
-      "@aws-cdk/aws-lambda": "1.45.0",
-      "@aws-cdk/core": "1.45.0",
-      "uuid": "^3.4.0"
-  },
-  "prettier": {
-      "tabWidth": 4
-  }
+    "name": "gg-accelerator-stream-manager",
+    "version": "1.0.0",
+    "description": "Deploy stack to test Stream Manager and Docker deployment connector",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w",
+        "cdk": "cdk",
+        "deploy": "cdk deploy",
+        "postdeploy": "python3 post_deploy_tasks.py",
+        "destroy": "cdk destroy"
+    },
+    "author": {
+        "name": "Amazon Web Services",
+        "url": "https://aws.amazon.com",
+        "organization": true
+    },
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "@types/node": "^13.7.7",
+        "@types/uuid": "^3.4.8",
+        "prettier": "2.0.5",
+        "typescript": "~3.7.2"
+    },
+    "dependencies": {
+        "@aws-cdk/aws-cloudformation": "1.45.0",
+        "@aws-cdk/aws-greengrass": "1.45.0",
+        "@aws-cdk/aws-iot": "1.45.0",
+        "@aws-cdk/aws-lambda": "1.45.0",
+        "@aws-cdk/core": "1.45.0",
+        "uuid": "^3.4.0"
+    },
+    "prettier": {
+        "tabWidth": 4
+    }
 }

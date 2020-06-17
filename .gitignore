@@ -139,6 +139,7 @@ yarn.lock
 # CDK Context & Staging files
 cdk.context.json
 .cdk.staging/
+cdk.json
 cdk.out/
 *.tabl.json
 *.js

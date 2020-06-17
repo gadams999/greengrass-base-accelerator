@@ -17,7 +17,7 @@ Clone this repository and install modules:
 
 ```
 
-Modify the `cdk.json` attributes for your development use:
+Copy or rename `cdk/cdk.json.orig` to  `cdk.json`, then modify these attributes for your development use:
 
 * `profile` - Name of AWS profile to use for permissions (must be changed from `REPLACE_WITH_PROFILE_NAME`)
 * `context.stack_name` - CloudFormation stack name to use (must be changed from `REPLACE_WITH_STACK_NAME`)
@@ -35,4 +35,5 @@ And to deploy, run the deploy scripts that will create or update the CloudFormat
 
 ## Troubleshooting
 
+* *Unable to resolve AWS account to use during Deployment* - Modify the `cdk/cdk.json` file and change the *profile* setting to an AWS profile (located in `~/.aws/config`). Save and then rerun the `npm run deploy` command.
 * *Deployment failed: TES service role is not associated with this account.* - Verify there is a Greengrass service role for account associated with the target region. This must be completed on a per-region basis.
