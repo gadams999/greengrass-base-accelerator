@@ -2,7 +2,7 @@ import cdk = require("@aws-cdk/core");
 import greengrass = require("@aws-cdk/aws-greengrass");
 // import secretsmanager = require('@aws-cdk/aws-secretsmanager');
 import { HelperIoTThingCertPolicy } from "./helper-iot-thing-cert-policy/helper-iot-thing-cert-policy";
-import { CustomResourceGreengrassServiceRole } from "./cr-greengrass-service-role/cr-greengrass-service-role";
+import { CustomResourceGreengrassGroupRole } from "./cr-greengrass-group-role/cr-greengrass-group-role";
 import { CustomResourceGreengrassResetDeployment } from "./cr-greengrass-reset-deployment/cr-greengrass-reset-deployment";
 import { GreengrassLambdaBASE } from "./lambda-gg-base/lambda-gg-base";
 
@@ -43,11 +43,11 @@ class GreengrassBaseStack extends cdk.Stack {
     );
 
     // Create Greengrass Service role with permissions the Core's resources should have
-    const ggServiceRole = new CustomResourceGreengrassServiceRole(
+    const ggServiceRole = new CustomResourceGreengrassGroupRole(
       this,
-      "GreengrassRoleCustomResource",
+      "GreengrassGroupRoleCustomResource",
       {
-        functionName: id + "-GreengrassRoleFunction",
+        functionName: id + "-GreengrassGroupRoleFunction",
         stackName: id,
         rolePolicy: {
           Version: "2012-10-17",
@@ -160,13 +160,13 @@ class GreengrassBaseStack extends cdk.Stack {
         name: id + "-SubscriptionsDefinition",
         initialVersion: {
           subscriptions: [
-            // {
-            //     // Add subscriptions as needed, this is a placeholder for source to cloud
-            //     id: 'Subscription1',
-            //     source: ggLambdaBASE.greengrassLambdaAlias.functionArn,
-            //     subject: 'base',
-            //     target: 'cloud'
-            // },
+            {
+                // Add subscriptions as needed, this is a placeholder for source to cloud
+                id: 'Subscription1',
+                source: ggLambdaBASE.greengrassLambdaAlias.functionArn,
+                subject: 'base',
+                target: 'cloud'
+            },
           ],
         },
       }
@@ -268,12 +268,16 @@ const app = new cdk.App();
 try {
   const x = app.node.tryGetContext("stack_name");
   if (x === "REPLACE_WITH_STACK_NAME") {
-    console.error("The stack name needs to be defined in cdk.json");
-    process.exit(1);
+      console.error("The stack name needs to be defined in cdk.json");
+      process.exit(1);
   }
 } catch (e) {
   console.log("error is", e);
 }
 
-new GreengrassBaseStack(app, app.node.tryGetContext("stack_name"));
+new GreengrassBaseStack(app, app.node.tryGetContext("stack_name"), {
+  env: {
+    region: app.node.tryGetContext("region")
+  }
+});
 app.synth();

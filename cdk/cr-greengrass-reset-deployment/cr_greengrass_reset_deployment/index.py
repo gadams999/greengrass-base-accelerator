@@ -32,9 +32,44 @@ def find_group_id(group_name):
     return result
 
 
+def deploy_group(greengrass_group_name):
+    """Deploy group to core"""
+    greengrass_client = boto3.client("greengrass")
+
+    group_id = find_group_id(greengrass_group_name)
+    logger.info("Group id to deploy: %s" % group_id)
+    if group_id:
+        group_version = greengrass_client.list_group_versions(GroupId=group_id)[
+            "Versions"
+        ][0]["Version"]
+        greengrass_client.create_deployment(
+            DeploymentType="NewDeployment",
+            GroupId=group_id,
+            GroupVersionId=group_version,
+        )
+        logger.info("Initiated Greengrass deployment to the group")
+    else:
+        logger.info("No group Id %s found, cannot deploy" % greengrass_group_name)
+    return cfnresponse.SUCCESS
+
+
+def reset_deployment(greengrass_group_name):
+    """Force reset of the greengrass group"""
+    greengrass_client = boto3.client("greengrass")
+
+    group_id = find_group_id(greengrass_group_name)
+    logger.info("Group id to reset deployment: %s" % group_id)
+    if group_id:
+        greengrass_client.reset_deployments(Force=True, GroupId=group_id)
+        logger.info("Forced reset of Greengrass deployment")
+    else:
+        logger.error("No group Id %s found, reset not required" % greengrass_group_name)
+    return cfnresponse.SUCCESS
+
+
 def main(event, context):
 
-    greengrass_client = boto3.client("greengrass")
+    # greengrass_client = boto3.client("greengrass")
 
     # NOTE: All ResourceProperties passed will uppercase the first letter
     #       of the property and leave the rest of the case intact.
@@ -51,32 +86,17 @@ def main(event, context):
         ):
             raise RuntimeError("Create failure requested, logging")
         elif event["RequestType"] == "Create":
-            # Create an initial deployment so when Docker starts, Greengrass will pull down
-            logger.info("Creating the initial deployment for Greengrass"
-            )
-            group_id = find_group_id(event["ResourceProperties"]["GreengrassGroup"])
-            logger.info("Group id to deploy: %s" % group_id)
-            if group_id:
-                group_version = greengrass_client.list_group_versions(
-                    GroupId=group_id
-                )["Versions"][0]["Version"]
-                greengrass_client.create_deployment(
-                    DeploymentType='NewDeployment',
-                    GroupId=group_id,
-                    GroupVersionId=group_version
-                )
-                result = cfnresponse.SUCCESS
-                logger.info("Initiated the first deployment to the group")
-            else:
-                logger.error(
-                    "No group Id %s found, reset not required"
-                    % event["ResourceProperties"]["GreengrassGroup"]
-                )
-           
+            # No action needed on resource 
+            logger.info("Creating called, no operations required")
             response_data = {}
         elif event["RequestType"] == "Update":
-            # Nothing is done during Update
-            logger.info("Update called, no actions being taken")
+            # A stack update may force Greengrass to delete the current group. In this case
+            # a forced reset is needed to allow that to happen. Call out in docs that
+            # this will require a manual deployment to take place.
+            logger.info("Update called, perform a deployment reset")
+            cfn_response = reset_deployment(
+                event["ResourceProperties"]["GreengrassGroup"]
+            )
             response_data = {}
         else:
             # Delete request
@@ -85,17 +105,9 @@ def main(event, context):
                 "Delete called, will attempt to reset Deployment on %s"
                 % event["ResourceProperties"]["GreengrassGroup"]
             )
-            group_id = find_group_id(event["ResourceProperties"]["GreengrassGroup"])
-            logger.info("Group id to delete: %s" % group_id)
-            if group_id:
-                greengrass_client.reset_deployments(Force=True, GroupId=group_id)
-                result = cfnresponse.SUCCESS
-                logger.info("Forced reset of Greengrass deployment")
-            else:
-                logger.error(
-                    "No group Id %s found, reset not required"
-                    % event["ResourceProperties"]["GreengrassGroup"]
-                )
+            cfn_response = reset_deployment(
+                event["ResourceProperties"]["GreengrassGroup"]
+            )
             response_data = {}
         cfnresponse.send(event, context, cfn_response, response_data, physical_id)
 
