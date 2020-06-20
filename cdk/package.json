@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "description": "Deploy stack to test Stream Manager and Docker deployment connector",
     "private": true,
+    "bin": {
+        "cdk": "bin/greengrass-accelerator.js"
+    },
     "scripts": {
         "build": "tsc",
         "watch": "tsc -w",

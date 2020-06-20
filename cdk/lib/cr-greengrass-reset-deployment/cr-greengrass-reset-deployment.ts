@@ -1,9 +1,8 @@
-import cfn = require('@aws-cdk/aws-cloudformation');
-import lambda = require('@aws-cdk/aws-lambda');
-import iam = require('@aws-cdk/aws-iam');
-import cdk = require('@aws-cdk/core');
-
-import uuid = require('uuid/v5');
+import * as cfn from "@aws-cdk/aws-cloudformation";
+import * as lambda from "@aws-cdk/aws-lambda";
+import * as iam from "@aws-cdk/aws-iam";
+import * as cdk from "@aws-cdk/core";
+import * as uuid from "uuid/v5";
 
 export interface CustomResourceGreengrassResetDeploymentProps {
   /**
