@@ -4,6 +4,8 @@ import * as iam from "@aws-cdk/aws-iam";
 import * as cdk from "@aws-cdk/core";
 import * as uuid from "uuid/v5";
 
+import * as path from "path";
+
 export interface CustomResourceGreengrassResetDeploymentProps {
   /**
    * Resource properties used to construct the custom resource and passed as dictionary
@@ -29,7 +31,9 @@ export class CustomResourceGreengrassResetDeployment extends cdk.Construct {
       provider: cfn.CustomResourceProvider.fromLambda(new lambda.SingletonFunction(this, 'Singleton', {
         functionName: props.functionName,
         uuid: uuid(props.functionName, uuid.DNS),
-        code: lambda.Code.fromAsset('cr-greengrass-reset-deployment/cr_greengrass_reset_deployment'),
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "cr_greengrass_reset_deployment")
+        ),
         handler: 'index.main',
         timeout: cdk.Duration.seconds(30),
         runtime: lambda.Runtime.PYTHON_3_8,

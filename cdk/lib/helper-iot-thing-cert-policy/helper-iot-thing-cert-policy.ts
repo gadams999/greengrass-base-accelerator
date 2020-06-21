@@ -4,6 +4,8 @@ import * as iam from "@aws-cdk/aws-iam";
 import * as cdk from "@aws-cdk/core";
 import * as uuid from "uuid/v5";
 
+import * as path from "path";
+
 export interface HelperIoTThingCertPolicyProps {
     /**
      * Resource properties used to construct the custom resource and passed as dictionary
@@ -47,7 +49,7 @@ export class HelperIoTThingCertPolicy extends cdk.Construct {
                     functionName: props.functionName,
                     uuid: uuid(props.functionName, uuid.DNS),
                     code: lambda.Code.fromAsset(
-                        "helper-iot-thing-cert-policy/helper_iot_thing_cert_policy"
+                        path.join(__dirname, "helper_iot_thing_cert_policy")
                     ),
                     handler: "index.main",
                     timeout: cdk.Duration.seconds(30),

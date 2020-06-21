@@ -1,6 +1,8 @@
 import * as lambda from "@aws-cdk/aws-lambda";
 import * as cdk from "@aws-cdk/core";
 
+import * as path from "path";
+
 export class GreengrassLambdaBASEProps {
     /**
      * Resource properties used to construct the custom resource and passed as dictionary
@@ -34,7 +36,9 @@ export class GreengrassLambdaBASE extends cdk.Construct {
             {
                 runtime: lambda.Runtime.PYTHON_3_7,
                 functionName: props.functionName,
-                code: lambda.Code.fromAsset("lambda-gg-base/lambda_code"),
+                code: lambda.Code.fromAsset(
+                    path.join(__dirname, "lambda_code")
+                ),
                 handler: "base.main",
             }
         );

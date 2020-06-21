@@ -4,6 +4,8 @@ import * as iam from "@aws-cdk/aws-iam";
 import * as cdk from "@aws-cdk/core";
 import * as uuid from "uuid/v5";
 
+import * as path from "path";
+
 export interface CustomResourceGreengrassGroupRoleProps {
     /**
      * Resource properties used to construct the custom resource and passed as dictionary
@@ -37,7 +39,8 @@ export class CustomResourceGreengrassGroupRole extends cdk.Construct {
                     functionName: props.functionName,
                     uuid: uuid(props.functionName, uuid.DNS),
                     code: lambda.Code.fromAsset(
-                        "cr-greengrass-group-role/cr_greengrass_group_role"
+                        // "cr-greengrass-group-role/cr_greengrass_group_role"
+                        path.join(__dirname, "cr_greengrass_group_role")
                     ),
                     handler: "index.main",
                     timeout: cdk.Duration.seconds(30),
