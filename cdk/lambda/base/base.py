@@ -1,4 +1,5 @@
-# Greengrass lambda source -sensor source
+# Greengrass lambda source - base
+# Example Lambda function
 import json
 import logging
 import greengrasssdk

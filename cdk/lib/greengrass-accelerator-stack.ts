@@ -1,10 +1,11 @@
 import * as cdk from "@aws-cdk/core";
 import * as greengrass from "@aws-cdk/aws-greengrass";
+import * as lambda from "@aws-cdk/aws-lambda";
 // import * as secretsmanager from "@aws-cdk/aws-secretsmanager";
 import { HelperIoTThingCertPolicy } from "./helper-iot-thing-cert-policy/helper-iot-thing-cert-policy";
 import { CustomResourceGreengrassGroupRole } from "./cr-greengrass-group-role/cr-greengrass-group-role";
 import { CustomResourceGreengrassResetDeployment } from "./cr-greengrass-reset-deployment/cr-greengrass-reset-deployment";
-import { GreengrassLambdaBASE } from "./lambda-gg-base/lambda-gg-base";
+import { GreengrassLambda } from "./gg-lambda-helper/gg-lambda-helper";
 
 /**
  * A stack that sets up a Greengrass Group and all support resources
@@ -76,12 +77,18 @@ export class GreengrassBaseStack extends cdk.Stack {
         );
 
         // Functions to be used in the Greengrass Group Deployment
-        const ggLambdaBASE = new GreengrassLambdaBASE(
+        // This uses the GreengrassLambda helper to create the function
+        // specifically for Greengrass (no need for permissions, subset of
+        // run times)
+        const ggLambdaBASE = new GreengrassLambda(
             this,
             "GreengrassLambdaBASE",
             {
-                functionName: id + "-GreengrassLambda-BASE",
+                functionName: "Lambda-BASE",
                 stackName: id,
+                assetPath: "lambda/base",
+                runTime: lambda.Runtime.PYTHON_3_7,
+                handler: "base.main"
             }
         );
 
@@ -166,7 +173,7 @@ export class GreengrassBaseStack extends cdk.Stack {
                             id: "Subscription1",
                             source:
                                 ggLambdaBASE.greengrassLambdaAlias.functionArn,
-                            subject: "base",
+                            subject: "topic/level2/level3",
                             target: "cloud",
                         },
                     ],
