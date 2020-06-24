@@ -1,9 +1,10 @@
-import cfn = require('@aws-cdk/aws-cloudformation');
-import lambda = require('@aws-cdk/aws-lambda');
-import iam = require('@aws-cdk/aws-iam');
-import cdk = require('@aws-cdk/core');
+import * as cfn from "@aws-cdk/aws-cloudformation";
+import * as lambda from "@aws-cdk/aws-lambda";
+import * as iam from "@aws-cdk/aws-iam";
+import * as cdk from "@aws-cdk/core";
+import * as uuid from "uuid/v5";
 
-import uuid = require('uuid/v5');
+import * as path from "path";
 
 export interface CustomResourceGreengrassResetDeploymentProps {
   /**
@@ -30,7 +31,9 @@ export class CustomResourceGreengrassResetDeployment extends cdk.Construct {
       provider: cfn.CustomResourceProvider.fromLambda(new lambda.SingletonFunction(this, 'Singleton', {
         functionName: props.functionName,
         uuid: uuid(props.functionName, uuid.DNS),
-        code: lambda.Code.fromAsset('cr-greengrass-reset-deployment/cr_greengrass_reset_deployment'),
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "cr_greengrass_reset_deployment")
+        ),
         handler: 'index.main',
         timeout: cdk.Duration.seconds(30),
         runtime: lambda.Runtime.PYTHON_3_8,

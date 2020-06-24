@@ -1,8 +1,11 @@
 {
-    "name": "gg-accelerator-stream-manager",
+    "name": "gg-base-accelerator",
     "version": "1.0.0",
-    "description": "Deploy stack to test Stream Manager and Docker deployment connector",
+    "description": "Deploy stack to develop and test Greengrass",
     "private": true,
+    "bin": {
+        "cdk": "bin/greengrass-accelerator.js"
+    },
     "scripts": {
         "build": "tsc",
         "watch": "tsc -w",
@@ -24,11 +27,13 @@
         "typescript": "~3.7.2"
     },
     "dependencies": {
-        "@aws-cdk/aws-cloudformation": "1.45.0",
-        "@aws-cdk/aws-greengrass": "1.45.0",
-        "@aws-cdk/aws-iot": "1.45.0",
-        "@aws-cdk/aws-lambda": "1.45.0",
-        "@aws-cdk/core": "1.45.0",
+        "@aws-cdk/aws-cloudformation": "^1.46.0",
+        "@aws-cdk/aws-greengrass": "^1.46.0",
+        "@aws-cdk/aws-iot": "^1.46.0",
+        "@aws-cdk/aws-lambda": "^1.46.0",
+        "@aws-cdk/core": "^1.46.0",
+        "npx": "^10.2.2",
+        "ts-node": "^8.10.2",
         "uuid": "^3.4.0"
     },
     "prettier": {

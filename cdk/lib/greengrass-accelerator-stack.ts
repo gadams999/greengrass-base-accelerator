@@ -1,15 +1,16 @@
-import cdk = require("@aws-cdk/core");
-import greengrass = require("@aws-cdk/aws-greengrass");
-// import secretsmanager = require('@aws-cdk/aws-secretsmanager');
+import * as cdk from "@aws-cdk/core";
+import * as greengrass from "@aws-cdk/aws-greengrass";
+import * as lambda from "@aws-cdk/aws-lambda";
+// import * as secretsmanager from "@aws-cdk/aws-secretsmanager";
 import { HelperIoTThingCertPolicy } from "./helper-iot-thing-cert-policy/helper-iot-thing-cert-policy";
 import { CustomResourceGreengrassGroupRole } from "./cr-greengrass-group-role/cr-greengrass-group-role";
 import { CustomResourceGreengrassResetDeployment } from "./cr-greengrass-reset-deployment/cr-greengrass-reset-deployment";
-import { GreengrassLambdaBASE } from "./lambda-gg-base/lambda-gg-base";
+import { GreengrassLambda } from "./gg-lambda-helper/gg-lambda-helper";
 
 /**
  * A stack that sets up a Greengrass Group and all support resources
  */
-class GreengrassBaseStack extends cdk.Stack {
+export class GreengrassBaseStack extends cdk.Stack {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
@@ -76,12 +77,18 @@ class GreengrassBaseStack extends cdk.Stack {
         );
 
         // Functions to be used in the Greengrass Group Deployment
-        const ggLambdaBASE = new GreengrassLambdaBASE(
+        // This uses the GreengrassLambda helper to create the function
+        // specifically for Greengrass (no need for permissions, subset of
+        // run times)
+        const ggLambdaBASE = new GreengrassLambda(
             this,
             "GreengrassLambdaBASE",
             {
-                functionName: id + "-GreengrassLambda-BASE",
+                functionName: "Lambda-BASE",
                 stackName: id,
+                assetPath: "lambda/base",
+                runTime: lambda.Runtime.PYTHON_3_7,
+                handler: "base.main"
             }
         );
 
@@ -166,7 +173,7 @@ class GreengrassBaseStack extends cdk.Stack {
                             id: "Subscription1",
                             source:
                                 ggLambdaBASE.greengrassLambdaAlias.functionArn,
-                            subject: "base",
+                            subject: "topic/level2/level3",
                             target: "cloud",
                         },
                     ],
@@ -270,28 +277,3 @@ class GreengrassBaseStack extends cdk.Stack {
         ggResetDeployment.node.addDependency(greengrassGroup);
     }
 }
-
-// Create stack
-const app = new cdk.App();
-// Pull the stack name from the context. Alert if the stack name has not been set.
-try {
-    let x = app.node.tryGetContext("stack_name");
-    if (x === "REPLACE_WITH_STACK_NAME") {
-        console.error("The stack name needs to be defined in cdk.json");
-        process.exit(1);
-    }
-    x = app.node.tryGetContext("region");
-    if (x === "REPLACE_WITH_REGION_NAME") {
-        console.error("The region name needs to be defined in cdk.json");
-        process.exit(1);
-    }
-} catch (e) {
-    console.log("error is", e);
-}
-
-new GreengrassBaseStack(app, app.node.tryGetContext("stack_name"), {
-    env: {
-        region: app.node.tryGetContext("region"),
-    },
-});
-app.synth();

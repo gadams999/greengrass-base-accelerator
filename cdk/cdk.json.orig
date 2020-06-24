@@ -1,5 +1,5 @@
 {
-  "app": "node index",
+  "app": "npx ts-node bin/greengrass-accelerator.ts",
   "profile": "REPLACE_WITH_PROFILE_NAME",
   "context": {
     "stack_name": "REPLACE_WITH_STACK_NAME",
