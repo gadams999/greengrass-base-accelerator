@@ -12,8 +12,10 @@ from urllib import request
 import boto3
 from botocore.exceptions import ClientError
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
 
 # Template is only for Greengrass 1.10.0 and newer
 config_json_template = {

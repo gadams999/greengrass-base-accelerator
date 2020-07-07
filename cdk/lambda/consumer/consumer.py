@@ -1,5 +1,5 @@
-# Greengrass lambda source - base
-# Example Lambda function
+# Greengrass lambda source
+# Read and print events from stream
 import json
 import logging
 import greengrasssdk
@@ -10,10 +10,12 @@ logger.setLevel(logging.WARN)
 
 client = greengrasssdk.client("iot-data")
 
+
 def startup():
     """Commands to execute during the initial launch of the function"""
     logger.info("Running starting commands")
     # Commands go here
+
 
 startup()
 

@@ -80,15 +80,37 @@ export class GreengrassBaseStack extends cdk.Stack {
         // This uses the GreengrassLambda helper to create the function
         // specifically for Greengrass (no need for permissions, subset of
         // run times)
-        const ggLambdaBASE = new GreengrassLambda(
+        const ggLambdaProducer = new GreengrassLambda(
             this,
-            "GreengrassLambdaBASE",
+            "GreengrassLambdaProducer",
             {
-                functionName: "Lambda-BASE",
+                functionName: "Lambda-Producer",
                 stackName: id,
-                assetPath: "lambda/base",
+                assetPath: "lambda/producer",
                 runTime: lambda.Runtime.PYTHON_3_7,
-                handler: "base.main"
+                handler: "producer.main",
+            }
+        );
+        const ggLambdaConsumer = new GreengrassLambda(
+            this,
+            "GreengrassLambdaConsumer",
+            {
+                functionName: "Lambda-Consumer",
+                stackName: id,
+                assetPath: "lambda/consumer",
+                runTime: lambda.Runtime.PYTHON_3_7,
+                handler: "consumer.main",
+            }
+        );
+        const ggLambdaReplay = new GreengrassLambda(
+            this,
+            "GreengrassLambdaReplay",
+            {
+                functionName: "Lambda-Replay",
+                stackName: id,
+                assetPath: "lambda/replay",
+                runTime: lambda.Runtime.PYTHON_3_7,
+                handler: "replay.main",
             }
         );
 
@@ -139,9 +161,25 @@ export class GreengrassBaseStack extends cdk.Stack {
                 },
                 functions: [
                     {
+                        // This enables the Stream Manager feature in Greengrass (core component such as Local Shadow)
+                        id: "CoreFunction1",
+                        functionArn:
+                            "arn:aws:lambda:::function:GGStreamManager:1",
+                        functionConfiguration: {
+                            encodingType: "binary",
+                            pinned: true,
+                            timeout: 3,
+                            environment: {
+                                variables: {
+                                    STREAM_MANAGER_AUTHENTICATE_CLIENT: "false",
+                                },
+                            },
+                        },
+                    },
+                    {
                         id: "LambdaFunction1",
                         functionArn:
-                            ggLambdaBASE.greengrassLambdaAlias.functionArn,
+                            ggLambdaProducer.greengrassLambdaAlias.functionArn,
                         functionConfiguration: {
                             encodingType: "binary",
                             pinned: true,
@@ -157,6 +195,28 @@ export class GreengrassBaseStack extends cdk.Stack {
                             },
                         },
                     },
+                    {
+                        id: "LambdaFunction2",
+                        functionArn:
+                            ggLambdaConsumer.greengrassLambdaAlias.functionArn,
+                        functionConfiguration: {
+                            encodingType: "binary",
+                            pinned: true,
+                            timeout: 3,
+                            environment: {},
+                        },
+                    },
+                    {
+                        id: "LambdaFunction3",
+                        functionArn:
+                            ggLambdaReplay.greengrassLambdaAlias.functionArn,
+                        functionConfiguration: {
+                            encodingType: "binary",
+                            pinned: true,
+                            timeout: 3,
+                            environment: {},
+                        },
+                    },
                 ],
             }
         );
@@ -169,12 +229,22 @@ export class GreengrassBaseStack extends cdk.Stack {
                 initialVersion: {
                     subscriptions: [
                         {
-                            // Add subscriptions as needed, this is a placeholder for source to cloud
                             id: "Subscription1",
+                            // See consumer messages in the cloud
                             source:
-                                ggLambdaBASE.greengrassLambdaAlias.functionArn,
-                            subject: "topic/level2/level3",
+                                ggLambdaConsumer.greengrassLambdaAlias
+                                    .functionArn,
+                            subject: "test",
                             target: "cloud",
+                        },
+                        {
+                            id: "Subscription2",
+                            // trigger replay by send message to function
+                            source: "cloud",
+                            subject: "test",
+                            target:
+                                ggLambdaReplay.greengrassLambdaAlias
+                                    .functionArn,
                         },
                     ],
                 },
