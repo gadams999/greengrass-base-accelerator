@@ -6,11 +6,10 @@ import * as cdk from "@aws-cdk/core";
 /**
  * Greengrass Lambda Helper - Creates a Lambda for use by Greengrass
  * along with versioning the function.
- * 
+ *
  * Derived function name based on stack_name + function_name
- * 
+ *
  */
-
 
 export class GreengrassLambdaProps {
     /**
@@ -37,24 +36,17 @@ export class GreengrassLambda extends cdk.Construct {
     ) {
         super(scope, id);
         // Create and Deploy Lambda for use by Greengrass
-        const greengrassLambda = new lambda.Function(
-            this,
-            props.functionName,
-            // props.stackName + "-" + props.functionName,
-            {
-                runtime: props.runTime,
-                functionName: props.stackName + "-" + props.functionName,
-                code: lambda.Code.fromAsset(
-                    props.assetPath,
-                    // path.join(__dirname, props.assetPath)
-                ),
-                handler: props.handler,
-            }
-        );
-        const version = greengrassLambda.addVersion(
-            "FunctionVersionPlaceholder"
-        );
-
+        const greengrassLambda = new lambda.Function(this, props.functionName, {
+            description: `Generated on: ${new Date().toISOString()}`,
+            runtime: props.runTime,
+            functionName: props.stackName + "-" + props.functionName,
+            code: lambda.Code.fromAsset(
+                props.assetPath
+                // path.join(__dirname, props.assetPath)
+            ),
+            handler: props.handler,
+        });
+        const version = greengrassLambda.addVersion(new Date().toISOString());
         // Greengrass Lambda specify the alias
         this.greengrassLambdaAlias = new lambda.Alias(
             this,
