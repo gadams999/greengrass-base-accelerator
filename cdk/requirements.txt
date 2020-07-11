@@ -1,5 +1,1 @@
 boto3
-greengrasssdk
-# For development
-pylint
-black
